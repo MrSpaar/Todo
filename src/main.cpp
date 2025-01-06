@@ -3,6 +3,6 @@
 
 
 int main(int argc, char **argv) {
-    auto app = Gtk::Application::create("org.todo");
+    auto app = Gtk::Application::create("com.github.mrspaar.Todo");
     return app->make_window_and_run<GUI>(argc, argv);
 }

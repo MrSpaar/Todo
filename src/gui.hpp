@@ -53,12 +53,14 @@ public:
         std::ifstream file("todo.json");
         tasks = nlohmann::json::parse(file);
 
-        for (const nlohmann::json &task: tasks)
+        int row = 0;
+        for (const auto &task: tasks.items()) {
             addTask(
-                task[0].template get<std::string>(),
-                task[1].template get<bool>()
+                task.key(),
+                task.value().template get<bool>(),
+                row++
             );
-
+        }
     }
 
     ~GUI() {
@@ -70,14 +72,12 @@ private:
         std::string text = taskEntry.get_text();
         if (text.empty()) return;
 
-        addTask(text, false);
+        tasks[text] = false;
         taskEntry.set_text("");
-        tasks.push_back({text, false});
+        addTask(text, false, tasks.size());
     }
 
-    void addTask(const std::string &text, bool checked) {
-        int row = ++rows;
-
+    void addTask(const std::string &text, bool checked, int row) {
         auto checkButton = Gtk::make_managed<Gtk::CheckButton>();
         auto label = Gtk::make_managed<Gtk::Label>();
         auto deleteButton = Gtk::make_managed<Gtk::Button>();
@@ -91,24 +91,23 @@ private:
         label->set_markup(checked ? "<s>" + text + "</s>" : text);
 
         checkButton->set_active(checked);
-        checkButton->signal_toggled().connect([this, label, checkButton, row] {
+        checkButton->signal_toggled().connect([this, label, checkButton] {
             label->set_markup(checkButton->get_active() ?
                 "<s>" + label->get_text() + "</s>" : label->get_text()
             );
 
-            tasks[row][1] = checkButton->get_active();
+            tasks[label->get_text()] = checkButton->get_active();
         });
 
         deleteButton->set_image_from_icon_name("minus-symbolic");
-        deleteButton->signal_clicked().connect([this, label, checkButton, deleteButton, row] {
-            tasks.erase(row);
+        deleteButton->signal_clicked().connect([this, label, checkButton, deleteButton] {
+            tasks.erase(label->get_text());
             taskContainer.remove(*label);
             taskContainer.remove(*checkButton);
             taskContainer.remove(*deleteButton);
         });
     }
 private:
-    int rows = -1;
     nlohmann::json tasks;
 
     Gtk::Grid container;
